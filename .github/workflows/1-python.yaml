@@ -1,0 +1,42 @@
+name: "1. Python"
+
+on: push
+
+jobs:
+  Build-Docker:
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        shell: bash
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: "./backend/Dockerfile"
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: rotoku/case-001-backend
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            rotoku/case-001-backend:${{ github.sha }}
+            rotoku/case-001-backend:v0.0.1
+            rotoku/case-001-backend:latest
+          labels: ${{ steps.meta.outputs.labels }}
